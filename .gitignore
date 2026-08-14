@@ -4,6 +4,18 @@
 # maintainer/owner tooling — kept locally, never shipped to participating teams
 maintainer/
 
+# Reference microdata you download yourself. NOT redistributable: ANES and GSS
+# licences let you use the files, not republish them — and a Zenodo release is
+# publication. Keep them here, cite them in registration.md, ship neither.
+data/
+
+# Intermediate simulation output. profiles.csv and responses_raw.csv are
+# reproducible from the scripts plus the ANES file; the raw model logs are not,
+# and registration K.2 asks for them — but they are also the bulk of the
+# output. Decide before you release: either un-ignore pipeline/out/logs/ or say
+# in registration.md that raw logs are available on request.
+pipeline/out/
+
 # R / editor / OS cruft
 .Rhistory
 .RData

@@ -1,12 +1,12 @@
 {
-  "team_id": "example",
-  "team_name": "Example Team (replace me)",
-  "contact": "name@institution.edu",
+  "team_id": "32",
+  "team_name": "Munichmetrix",
+  "contact": "C.Haensch@lmu.de",
   "creators": [
     {
-      "name": "Lastname, Firstname",
-      "affiliation": "Your institution",
-      "orcid": ""
+      "name": "Haensch, Anna-Carolina",
+      "affiliation": "LMU Munich",
+      "orcid": "0000-0001-6772-0393"
     }
   ],
   "abstract": "",
