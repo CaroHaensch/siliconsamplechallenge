@@ -222,12 +222,18 @@ render_backstory <- function(profile, source_type, narrative = NULL,
     bits <- c(bits, att)
   }
 
-  ## The cumulative file carries census region, the 2020 file urbanicity.
-  place <- aux_label(profile, "region", source_type)
-  if (is.null(place)) {
-    urb <- aux_label(profile, "urbanicity", source_type)
-    if (!is.null(urb)) place <- urb
-  }
+  ## Census region is DELIBERATELY NOT rendered. `assign_states()` in
+  ## 01_build_profiles.R draws the state independently of the donor's ANES
+  ## region, so roughly three quarters of personas carry a region that
+  ## contradicts their state — and in the extreme-weather arm the state is
+  ## named in the stimulus ("you reported that you are currently living in
+  ## Indiana") right next to "lives in the West". One consistent place
+  ## statement is worth more than two conflicting ones. Urbanicity (the 2020
+  ## file's equivalent) has no such conflict and is still rendered.
+  ##
+  ## To restore region, make assign_states() draw within the donor's region
+  ## first; re-adding the line alone reintroduces the contradiction.
+  place <- aux_label(profile, "urbanicity", source_type)
   if (!is.null(place)) bits <- c(bits, sprintf("lives in %s", place))
 
   mar <- aux_label(profile, "marital", source_type)

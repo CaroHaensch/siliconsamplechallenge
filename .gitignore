@@ -9,12 +9,31 @@ maintainer/
 # publication. Keep them here, cite them in registration.md, ship neither.
 data/
 
-# Intermediate simulation output. profiles.csv and responses_raw.csv are
-# reproducible from the scripts plus the ANES file; the raw model logs are not,
-# and registration K.2 asks for them — but they are also the bulk of the
-# output. Decide before you release: either un-ignore pipeline/out/logs/ or say
-# in registration.md that raw logs are available on request.
+# Intermediate simulation output, NOT tracked. profiles.csv and
+# responses_raw.csv are reproducible from the scripts plus the ANES file; the
+# raw model logs in pipeline/out/logs/ are not, and registration K.2 requires
+# them for Tier 1 — but they are far too large for git: 45 MB for the
+# 850-respondent pilot, so roughly 500 MB at 9,900, against a repository that
+# is otherwise well under a megabyte.
+#
+# K.2 anticipates exactly this: "oversized logs may be a separate linked Zenodo
+# upload". So the logs ship as their own Zenodo record, linked from
+# registration.md K.2 — they must ship somehow, they just must not ship here.
+# Check the actual size after the run with:  du -sh pipeline/out/logs
 pipeline/out/
+
+# Credentials. ellmer reads the provider key from the environment
+# (ANTHROPIC_API_KEY / OPENAI_API_KEY), so a project-level .Renviron is the
+# obvious place to put it — and the obvious way to commit it by accident.
+# Keys belong in ~/.Renviron; these patterns are the safety net.
+.Renviron
+.Renviron.*
+.env
+.env.*
+!.Renviron.example
+!.env.example
+*.pem
+*.key
 
 # R / editor / OS cruft
 .Rhistory

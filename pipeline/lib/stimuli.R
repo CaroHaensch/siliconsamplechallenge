@@ -23,22 +23,40 @@
 RE_PAGEBREAK <- "^\\s*[-—–]{1,2}\\s*page\\s*break\\s*[-—–]{0,2}\\s*$"
 RE_SEPARATOR <- "^-{10,}\\s*$"
 RE_BRACKETED <- "^\\s*\\[.*\\]\\s*$"
-RE_URL       <- "^\\s*https?://"
-RE_SOURCES   <- "^\\s*(Sources?|References)\\s*:?"
+RE_URL       <- "https?://|doi\\.org"
+RE_SOURCES   <- "^\\s*(Sources?|References?)\\s*:?\\s*$"
 RE_NOTDISP   <- "not displayed to participants"
 
 ## Strip scaffolding. Stops at the first "[not displayed to participants]"
 ## marker or horizontal rule, because everything after either is authoring
 ## material or the next section.
+##
+## Reference lists are the awkward case: several stimuli interleave a bare
+## "Sources:" header, its citations, and further participant-facing prose on the
+## same page. Dropping only the header (as an earlier version did) left the
+## citations in the stimulus. So a "Sources:"/"References:" line opens a
+## reference block that runs until a blank line, a page break, or a rule —
+## whichever comes first — and, independently, any line carrying a URL or DOI is
+## dropped wherever it occurs, which catches citations that follow a blank line
+## inside a list.
 clean_stimulus <- function(body) {
   keep <- character(0)
+  in_refs <- FALSE
   for (l in body) {
     if (grepl(RE_NOTDISP, l, ignore.case = TRUE)) break
     if (grepl(RE_SEPARATOR, l))                   break
+    if (grepl(RE_SOURCES, l, ignore.case = TRUE)) { in_refs <- TRUE; next }
+    if (in_refs) {
+      ## The list ends at the first blank line or page break; both are also
+      ## dropped, so a trailing reference block leaves no stray whitespace.
+      if (!nzchar(trimws(l)) || grepl(RE_PAGEBREAK, l, ignore.case = TRUE)) {
+        in_refs <- FALSE
+      }
+      next
+    }
     if (grepl(RE_PAGEBREAK, l, ignore.case = TRUE)) next
     if (grepl(RE_BRACKETED, l))                   next
     if (grepl(RE_URL, l))                         next
-    if (grepl(RE_SOURCES, l, ignore.case = TRUE)) next
     keep <- c(keep, sub("\\s+$", "", l))
   }
   txt <- paste(keep, collapse = "\n")
@@ -115,11 +133,19 @@ load_extreme_weather <- function(path = "survey/questionnaire.txt") {
   }
 
   ## Case bodies live under "Intervention page 3", each introduced by a bare
-  ## "Case N" line.
-  p3 <- strsplit(txt, "Intervention page 3", fixed = TRUE)[[1]]
-  if (length(p3) < 2) stop("'Intervention page 3' marker not found.", call. = FALSE)
-  p3 <- p3[2]
-  p3_lines <- strsplit(p3, "\n", fixed = TRUE)[[1]]
+  ## "Case N" line. The phrase also occurs inline in the authoring note above,
+  ## so anchor on the line that consists of the marker alone and take the last
+  ## such line.
+  all_lines <- strsplit(txt, "\n", fixed = TRUE)[[1]]
+  p3_start  <- grep("^\\s*Intervention page 3\\s*$", all_lines)
+  if (!length(p3_start)) stop("'Intervention page 3' marker not found.", call. = FALSE)
+  p3_start  <- p3_start[length(p3_start)]
+  p3_lines  <- all_lines[(p3_start + 1L):length(all_lines)]
+
+  ## Authoring scaffolding (References, Risk categories) trails the last case
+  ## body and must not leak into it.
+  scaffold <- grep("[not displayed to participants]", p3_lines, fixed = TRUE)
+  if (length(scaffold)) p3_lines <- p3_lines[seq_len(scaffold[1] - 1L)]
 
   case_starts <- grep("^Case ([0-9])\\s*$", p3_lines)
   if (length(case_starts) < 4) {

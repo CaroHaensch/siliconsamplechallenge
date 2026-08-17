@@ -253,7 +253,26 @@ print(round(chi, 3))
 note("These are p-values for moderator x condition independence. They should")
 note("be uniformly distributed; a very small one means condition assignment is")
 note("no longer orthogonal to demographics.")
-if (any(chi < 0.001)) note("FLAG - assignment is not independent of demographics.")
+
+## A moderator whose spec allows a level that the pool never draws produces an
+## all-zero row, an expected count of zero, and a NaN p-value. That is not a
+## randomisation failure, but it does mean the moderator went unchecked here —
+## and it is worth knowing about in its own right, because a level the scoring
+## expects and the pool never produces is a structural hole in the submission.
+if (anyNA(chi)) {
+  na_m <- names(chi)[is.na(chi)]
+  note("NOT TESTED (NaN): ", paste(na_m, collapse = ", "),
+       " - a level in the spec has zero cases, so the test is undefined.")
+  for (m in na_m) {
+    empty <- setdiff(sst$moderators[[m]], unique(as.character(d[[m]])))
+    if (length(empty)) {
+      note("  ", m, ": level(s) with no respondents: ",
+           paste(empty, collapse = ", "))
+    }
+  }
+}
+
+if (any(chi < 0.001, na.rm = TRUE)) note("FLAG - assignment is not independent of demographics.")
 
 
 ## ===========================================================================

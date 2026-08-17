@@ -9,12 +9,16 @@
 ##     -> stage 2: all post-treatment items in one structured answer
 ##     -> sampled item values -> responses_raw.csv
 ##
-## Usage:
+## Usage — from the command line:
 ##   Rscript pipeline/02_simulate.R --dry-run                # print prompts, call nothing
 ##   Rscript pipeline/02_simulate.R --stage backstories      # optional, one call/respondent
 ##   Rscript pipeline/02_simulate.R --limit 50               # pilot across all conditions
 ##   Rscript pipeline/02_simulate.R                          # full run
 ##   Rscript pipeline/02_simulate.R --resume                 # continue after a crash
+##
+## Usage — from RStudio: edit the RUN OPTIONS block below, then press Source
+## (Ctrl+Shift+S). The options are ignored when command-line flags are given,
+## so the two entry points cannot disagree.
 ##
 ## Output: pipeline/out/responses_raw.csv — one row per respondent, one column
 ## per Qualtrics item. Values are CONTINUOUS: response-style extremity has been
@@ -72,15 +76,77 @@ suppressPackageStartupMessages({
   library(readr)
 })
 
+## ===========================================================================
+## RUN OPTIONS — for running this file from RStudio (Source / Ctrl+Shift+S)
+## ===========================================================================
+## Edit the values below, save, press Source. This block is read ONLY in an
+## interactive session — under Rscript it is ignored, so the command-line
+## behaviour documented above is unchanged.
+##
+## dry_run  TRUE   print the prompts for one respondent and stop. No API call,
+##                 no cost, no key needed. Start here.
+##          FALSE  actually run.
+## stage    "survey"      the two-stage instrument -> responses_raw.csv
+##          "backstories" the optional narrative stage -> backstories.csv
+## limit    NA     every respondent in the pool (13,500 — the full, paid run)
+##          50     pilot: ~50 respondents, stratified across all conditions
+## resume   TRUE   continue a run that died, reusing finished chunks on disk
+## condition NULL  which condition's prompts the dry run shows. NULL picks the
+##                 extreme-weather arm; any condition name from the pool works.
+## ---------------------------------------------------------------------------
+
+RUN <- list(
+  dry_run = FALSE,
+  stage   = "survey",
+  limit   = NA_integer_,
+  resume  = FALSE,
+  condition = NULL
+)
+
+## ---------------------------------------------------------------------------
+## RUN applies in an interactive session only. Under Rscript the block is
+## ignored entirely, so a bare `Rscript pipeline/02_simulate.R` is still the
+## full run it has always been and no batch job silently turns into a dry run.
+## Flags always win.
+## ---------------------------------------------------------------------------
 args <- commandArgs(trailingOnly = TRUE)
 get_arg <- function(flag, default = NULL) {
   i <- which(args == flag)
   if (length(i) && length(args) > i[1]) args[i[1] + 1] else default
 }
-stage   <- get_arg("--stage", "survey")
-limit_n <- suppressWarnings(as.integer(get_arg("--limit", NA)))
-dry_run <- "--dry-run" %in% args
-resume  <- "--resume"  %in% args
+use_run <- interactive()
+stage   <- get_arg("--stage", if (use_run) RUN$stage else "survey")
+limit_n <- suppressWarnings(
+  as.integer(get_arg("--limit", if (use_run) RUN$limit else NA)))
+dry_run <- "--dry-run" %in% args || (use_run && isTRUE(RUN$dry_run))
+resume  <- "--resume"  %in% args || (use_run && isTRUE(RUN$resume))
+
+## `quit()` is right for Rscript and wrong in RStudio, where it takes the whole
+## session down and with it everything you were about to inspect. Both exits
+## below go through this.
+finish <- function(msg = NULL) {
+  if (!is.null(msg)) message(msg)
+  if (interactive()) invokeRestart("abort") else quit(save = "no")
+}
+
+if (interactive()) {
+  message(sprintf(
+    "[RUN] dry_run=%s  stage=%s  limit=%s  resume=%s   (edit the RUN list to change)",
+    dry_run, stage, if (is.na(limit_n)) "all" else limit_n, resume))
+  if (!dry_run) {
+    message("[!!] dry_run = FALSE: this will send billable API requests.")
+  }
+}
+
+## Every path in this pipeline is relative to the repository root. Rscript is
+## normally started there; RStudio is not, so fail with a usable message rather
+## than a "cannot open file" from an arbitrary source() further down.
+if (!file.exists("pipeline/00_config.R") || !dir.exists("survey")) {
+  stop("Working directory is '", getwd(), "', which is not the repository ",
+       "root.\nIn RStudio: Session -> Set Working Directory -> To Source File ",
+       "Location, then setwd(\"..\") — or open the project from the repo ",
+       "folder.", call. = FALSE)
+}
 
 source("pipeline/00_config.R")
 source("pipeline/lib/anes_recode.R")   # TARGET_LEVELS, used by priors.R
@@ -292,7 +358,7 @@ if (identical(stage, "backstories")) {
   dir.create(dirname(cfg$backstories_out), recursive = TRUE, showWarnings = FALSE)
   readr::write_csv(bs, cfg$backstories_out)
   message(sprintf("[OK] wrote %s (%d rows)", cfg$backstories_out, nrow(bs)))
-  quit(save = "no")
+  finish("Backstories written. Set RUN$stage = \"survey\" for the main run.")
 }
 
 ## Splice in the narratives if the optional stage was run. Absent, personas are
@@ -592,20 +658,49 @@ parse_respondent <- function(ans, items, style) {
 ## ===========================================================================
 
 if (dry_run) {
-  ## Show the extreme-weather arm: it is the only condition whose stimulus is
-  ## assembled rather than looked up, so it is the one worth eyeballing.
-  i <- which(profiles$condition == "Extreme weather predictions")[1]
-  if (is.na(i)) i <- 1L
+  ## Default to the extreme-weather arm: it is the only condition whose stimulus
+  ## is assembled rather than looked up, so it is the one worth eyeballing. Set
+  ## RUN$condition to any other condition name to inspect that one instead.
+  want <- RUN$condition %||% "Extreme weather predictions"
+  i <- which(profiles$condition == want)[1]
+  if (is.na(i)) {
+    warning("No respondent in condition '", want, "'; showing row 1 instead. ",
+            "Available: ", paste(unique(profiles$condition), collapse = ", "))
+    i <- 1L
+  }
   p <- profiles[i, ]
-  cat("\n=========== STAGE 1 SYSTEM (variant ", p$prompt_variant, ") ===========\n\n", sep = "")
-  cat(SYSTEM_VARIANTS[[p$prompt_variant]], "\n")
-  cat("\n=========== STAGE 1 USER ===========\n\n")
-  cat(prompt_stage1(p, i), "\n")
-  cat("\n=========== STAGE 2 USER ===========\n\n")
-  cat(prompt_stage2(p, list(belief_pre = 72, trust_pre = 55,
-                            self_description = "(example)"), i), "\n")
-  message("\n--dry-run: no API calls made, nothing written.")
-  quit(save = "no")
+
+  txt <- c(
+    sprintf("Respondent row %d | condition: %s | prompt variant: %d",
+            i, p$condition, p$prompt_variant),
+    "",
+    "=========== STAGE 0 USER (backstory, only used with stage = \"backstories\") ===========",
+    "", build_backstory_prompt(p),
+    "",
+    sprintf("=========== STAGE 1 SYSTEM (variant %d) ===========", p$prompt_variant),
+    "", SYSTEM_VARIANTS[[p$prompt_variant]],
+    "",
+    "=========== STAGE 1 USER ===========",
+    "", prompt_stage1(p, i),
+    "",
+    "=========== STAGE 2 USER ===========",
+    "## NOTE: the pre-treatment values below are placeholders. In a real run",
+    "## they are whatever stage 1 returned for this respondent.",
+    "", prompt_stage2(p, list(belief_pre = 72, trust_pre = 55,
+                              self_description = "(example)"), i)
+  )
+
+  cat(paste(txt, collapse = "\n"), "\n")
+
+  ## Also on disk, because several hundred lines of prompt are easier to read in
+  ## the editor than in a scrollback buffer.
+  preview <- file.path(cfg$logs_dir, "prompts_preview.txt")
+  dir.create(dirname(preview), recursive = TRUE, showWarnings = FALSE)
+  writeLines(txt, preview, useBytes = TRUE)
+  message(sprintf("\n[OK] dry run: no API calls, no cost. Prompts written to %s",
+                  preview))
+  if (interactive()) try(utils::file.edit(preview), silent = TRUE)
+  finish("Set RUN$dry_run = FALSE (and RUN$limit = 50) for a real pilot.")
 }
 
 
@@ -746,8 +841,9 @@ message(sprintf("\n%d/%d respondents complete on all %d items (%d incomplete)",
                 sum(ok), nrow(responses), length(item_cols), sum(!ok)))
 
 ## The precision floor is checked on the rows that SURVIVE, not the rows we
-## asked for. cfg$n_per_intervention = 750 against a floor of 500 is exactly
-## the headroom that lets us drop these.
+## asked for. cfg$n_per_intervention against a floor of 500 is exactly the
+## headroom that lets us drop these — at the current 550/1100 that headroom is
+## 10%, so watch this line rather than assuming it holds.
 tab <- table(responses$condition[ok])
 iv  <- tab[names(tab) != "control"]
 if (length(iv)) {

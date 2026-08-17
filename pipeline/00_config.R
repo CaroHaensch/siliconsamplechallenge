@@ -36,10 +36,18 @@ cfg <- list(
 
   ## --- sample size (README: >= 500 per intervention, >= 1000 control) -----
   ## The floor is a *precision* requirement, not a scoring input. Going above
-  ## it buys stability, not score. n_per_intervention = 750 leaves headroom
-  ## for dropping malformed generations without falling under the floor.
-  n_per_intervention = 750L,
-  n_control          = 1500L,
+  ## it buys stability, not score.
+  ##
+  ## 550/1100 is the floor plus 10%. The headroom is not decoration: rows with
+  ## malformed generations get dropped, and at exactly 500/1000 a single dropped
+  ## row per cell puts the submission under the floor and makes it invalid.
+  ## 10% covers the failure rates seen in the pilot; if yours are higher, raise
+  ## this rather than patching the shortfall afterwards.
+  ##
+  ## Cost scales linearly in n: 9,900 respondents is ~73% of the 13,500 this
+  ## was set to before. Check cfg$use_batch too — that halves the bill again.
+  n_per_intervention = 550L,
+  n_control          = 1100L,
 
   ## --- latent-trait layer (see pipeline/README.md, "Why latent traits") ---
   ## Three person-level traits are drawn *before* the LLM is called and are
@@ -104,8 +112,10 @@ cfg <- list(
   ## --- LLM (registration B) ----------------------------------------------
   ## provider/model are passed to ellmer::chat(). Use the fully versioned
   ## identifier so B.1 is reproducible.
-  provider    = "anthropic",
-  model       = "claude-sonnet-5",
+  #provider    = "anthropic",
+  #model       = "claude-sonnet-5",
+  provider = "openai",
+  model    = "gpt-5-mini",
   temperature = 1.0,
 
   ## Number of semantically equivalent prompt variants. Roughly half the
@@ -121,7 +131,7 @@ cfg <- list(
 
   ## Use batch_chat_structured() instead of parallel_chat_structured():
   ## ~50% cheaper, up to 24h latency. Recommended for the full run.
-  use_batch = FALSE,
+  use_batch = TRUE,
 
   ## --- elicitation (registration E.3) ------------------------------------
   ## "point"        — the model returns one integer per item.
@@ -170,7 +180,13 @@ cfg <- list(
   ## Coefficients estimated by 01b_fit_priors.R on public microdata you supply.
   ## Empty or missing = use the literature defaults shipped in priors.R.
   ## Outcomes absent from the file keep their defaults, so a partial fit is fine.
-  prior_coef_path = "",
+  ##
+  ## Path is relative to the repository root, like every other path in this
+  ## file. It must match where 01b writes: file.path(dirname(cfg$responses_out),
+  ## "prior_coefs_fitted.csv"). A bare filename here resolves to the repo root,
+  ## the file is not found, and load_prior_coefs() falls back to the literature
+  ## defaults with only a message — i.e. the fit is silently ignored.
+  prior_coef_path = "pipeline/out/prior_coefs_fitted.csv",
 
   ## How much of each outcome's between-person spread is resolved in the anchor
   ## (i.e. how different two people in the same demographic cell are told they
@@ -187,7 +203,7 @@ cfg <- list(
   ## Respondents per chunk. Each chunk is written to disk before the next
   ## starts, so --resume can pick up after a crash or a rate-limit wall
   ## without re-spending on completed respondents.
-  chunk_size  = 250L,
+  chunk_size  = 1000L,
   max_retries = 2L,
 
   ## --- paths --------------------------------------------------------------
