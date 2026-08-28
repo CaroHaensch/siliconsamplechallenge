@@ -1,0 +1,47 @@
+{
+  "upload_type": "software",
+  "title": "Silicon Sample Benchmark — Tier 1 (individual simulation) submission (team 20)",
+  "version": "1.0-t1",
+  "language": "eng",
+  "access_right": "open",
+  "license": "CC-BY-4.0",
+  "creators": [
+    {
+      "name": "Haensch, Anna-Carolina",
+      "affiliation": "LMU Munich",
+      "orcid": "0000-0001-6772-0393"
+    }
+  ],
+  "description": "<p>Tier-1 per-respondent simulation combining a classical prediction layer with an LLM. A pool of 9,900 synthetic respondents (550 per intervention, 1,100 control) is resampled with survey weights from ANES cumulative time-series donors (2016 onwards), preserving the joint distribution of the six scored moderators together with auxiliary variables used only for persona detail. Three latent traits are drawn per respondent before generation and verbalised into the persona, which is what makes the thirteen outcomes co-vary within a person. Each outcome is anchored on a linear model of the six moderators: ten anchors are priors read off published US survey research (Pew, Yale CCC, Hornsey et al. 2016), three are estimated on GSS microdata. The LLM (gpt-5-mini-2025-08-07, Batch API, temperature 1.0) therefore supplies the deviation from the anchor rather than the level. Elicitation is two-stage: pre-treatment items, then the stimulus verbatim, then all post-treatment items in one structured response. Personas are assigned round-robin across three semantically equivalent system-prompt variants.<\/p>",
+  "keywords": [
+    "Silicon Sample Benchmark",
+    "silicon sampling",
+    "large language models",
+    "computational social science",
+    "survey methodology",
+    "public opinion",
+    "climate communication",
+    "treatment effect prediction"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://janpfander.github.io/llm_predictions_megastudy/",
+      "relation": "isPartOf",
+      "scheme": "url",
+      "resource_type": "publication-other"
+    },
+    {
+      "identifier": "https://janpfander.github.io/llm_predictions_megastudy/amendment_preregistration.html",
+      "relation": "references",
+      "scheme": "url",
+      "resource_type": "publication-preprint"
+    },
+    {
+      "identifier": "https://github.com/CaroHaensch/siliconsamplechallenge",
+      "relation": "isCompiledBy",
+      "scheme": "url",
+      "resource_type": "software"
+    }
+  ],
+  "notes": "Team 20. Disclosure class A."
+}
