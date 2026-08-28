@@ -13,14 +13,12 @@ sections (B) once per model. See the call's *Disclosure policy* for escrow rules
 
 ## 0 · Approach identity and output
 - **0.1 Team ★** — Team "Munichmetrics" (team_id 20). Anna-Carolina Haensch, LMU Munich, University of Maryland College Park, MCML, Contact: C.Haensch@lmu.de
-- **0.2 Plain-language summary ★** — I build a synthetic stand-in for the study's participants and put it through the same survey the real participants took. Each synthetic respondent is a specific person rather than an average one — a particular combination of age, education, income, party, race and gender, drawn so that these characteristics go together the way they do among real Americans, together with a disposition of their own: how much they tend to trust experts, how much they worry about the environment, how much effort they will actually put in. Before any of them answers anything, we work out from decades of existing US survey data what a person like that typically says, and how much people who look alike on paper nonetheless disagree. Each synthetic respondent then reads one of the study's texts, word for word as a participant would see it, and answers all thirteen outcome measures. What we submit is one predicted answer per person per question — 9,900 people, all 17 conditions — from which the study's effects can be computed exactly as they will be from the human data. We have not seen any results from the study, and nothing in our procedure was adjusted to match them.
+- **0.2 Plain-language summary ★** — I build a synthetic stand-in for the study's participants and put it through the same survey the real participants took. Each synthetic respondent is a specific person rather than an average one — a particular combination of age, education, income, party, race and gender, drawn so that these characteristics go together the way they do among real Americans, together with a disposition of their own: how much they tend to trust experts, how much they worry about the environment, how much effort they will actually put in. Before any of them answers anything, we work out from decades of existing US survey data what a person like that typically says, and how much people who look alike on paper nonetheless disagree. Each synthetic respondent then reads one of the study's texts, word for word as a participant would see it, and answers all thirteen outcome measures. What we submit is one predicted answer per person per question, 9,900 people, all 17 conditions, from which the study's effects can be computed exactly as they will be from the human data. We have not seen any results from the study, and nothing in our procedure was adjusted to match them.
 - **0.3 Submission tier & approach family ★** — tier (1/2/3); family (e.g. per-respondent simulation / agent / direct forecast; single model / ensemble / multi-agent; zero-shot / literature-conditioned):
   **Tier 1.** Per-respondent simulation; single model, no ensemble, no agentic scaffold;
-  **literature-conditioned** — both the baseline levels and the expected intervention effect enter
+  literature-conditioned — both the baseline levels and the expected intervention effect enter
   the prompt as explicit priors from public microdata and published survey research.
-  This entry is **`primary`**: GPT-5-mini, template personas, no generated backstories. Further
-  Tier-1 entries from this team, each in its own repository and Zenodo deposit, differ in persona
-  construction rather than in this pipeline. A GPT-5-nano variant was piloted and **not submitted**
+  This entry is **`primary`**: GPT-5-mini, template personas. A GPT-5-nano variant was piloted and **not submitted**
   (see J.1).
 - **0.4 Pipeline diagram** — ordered steps from raw inputs to submitted file:
   ```
@@ -36,7 +34,7 @@ sections (B) once per model. See the call's *Disclosure policy* for escrow rules
                              → stage 2 (stimulus verbatim + 44 post-treatment items)
                              → distributions returned → one value sampled per item
     → 03_export.R            response-style rounding, discretisation → Qualtrics-shaped raw export
-    → scripts/clean.R        → predictions/<team_id>_T1_<entry>_v1.csv  (+ SHA-256 in metadata.json)
+    → scripts/clean.R        → predictions/20_T1_primary_v1.csv  (+ SHA-256 in metadata.json)
     → 04_diagnostics.R       internal quality checks (not part of the submission)
   ```
 - **0.5 Coverage ★** — number of respondents/cells/estimates; mapping to conditions. Full coverage is required: every submission predicts **all 16 interventions and all 13 outcomes** (partial coverage is not accepted). Confirm here:
@@ -64,9 +62,9 @@ sections (B) once per model. See the call's *Disclosure policy* for escrow rules
   every Batch result file), not the requested alias `gpt-5-mini`. Size undisclosed by the provider.
   <https://platform.openai.com/docs/models>
 - **B.2 Access & context mode** — API/web/local; API name + version; chat vs stateless; exact call dates:
-  Public OpenAI API, **Batch API** (24-hour completion window), called from R via the `ellmer`
-  package (`ellmer::batch_chat_structured()`), **ellmer 0.4.2**.
-  **Stateless** — every request carries its full context; no conversation threads, no server-side
+  Public OpenAI API, Batch API (24-hour completion window), called from R via the `ellmer`
+  package (`ellmer::batch_chat_structured()`), ellmer 0.4.2.
+  Stateless — every request carries its full context; no conversation threads, no server-side
   state between the two calls (see E.2 on how stage 1 is replayed into stage 2).
   Call dates: the submitted run was executed in a single session on **16 August 2026, 13:20–22:48
   CEST**. Pilot runs preceding it: 14 August 2026 (n = 102, Claude Sonnet; n = 51, GPT-5-mini),
@@ -76,7 +74,7 @@ sections (B) once per model. See the call's *Disclosure policy* for escrow rules
   penalties and stop sequences are not set by the pipeline, and no provider-side seed is set.
   Reasoning effort is not set explicitly and runs at the provider default; note that reasoning
   tokens dominate output volume for this model family (84% of output tokens in the n = 850 pilot).
-  **One completion per call, one call per stage, two stages per respondent** — no repeated sampling
+  One completion per call, one call per stage, two stages per respondent — no repeated sampling
   of the same respondent and no best-of-n selection.
 - **B.4 Customization** — fine-tuning, RAG, prompt optimization, tool use, web search, agentic scaffolds (cross-ref H):
   None. No fine-tuning, no retrieval or RAG, no tool use, no web access, no agentic scaffold, no
@@ -310,6 +308,7 @@ sections (B) once per model. See the call's *Disclosure policy* for escrow rules
 
 ## I · Data inputs, blinding, and competing interests
 - **I.1 Competing interests ★** — funding, in-kind compute/model access, relationships with LLM-interested entities:
+None. No external funding, in-kind model access, or other relationships with LLM-interested entities influenced this submission. All API usage was paid at the publicly available rate.
 - **I.2 External human data †** — all external human datasets that informed the approach anywhere (training/fine-tuning/retrieval/ICL/calibration):
   Three, all public and all independent of the target study:
   (1) **ANES Time Series Cumulative Data File** (`anes_timeseries_cdf_csv_20260205`), waves 2016+ —
@@ -329,8 +328,8 @@ sections (B) once per model. See the call's *Disclosure policy* for escrow rules
   this study, including pilot data, at any point before the prediction lock. Every quantity that
   informed this pipeline comes from the sources listed in I.2, all of which predate and are
   independent of the target study. No parameter was tuned against any target-study result, and no
-  output was adjusted to resemble one.
-  **[SIGN: name, affiliation, date]**
+  output was adjusted to resemble one. 
+  **Anna-Carolina Haensch, LMU Munich, 28.08.2026**
 - **I.4 Contamination note †** — training cutoff of every model vs public release dates of this project's materials; note any known exposure:
   **No contamination is possible from this project's materials, because the model's training cutoff
   precedes their existence by roughly two years.**
@@ -389,8 +388,9 @@ sections (B) once per model. See the call's *Disclosure policy* for escrow rules
 
 ## K · Reproducibility & frozen artifacts
 - **K.1 Code & materials** — link/DOI, secrets removed, determinism/seeds documented (also record the link in `metadata.json` → `code_repository` / `code_doi`):
-  Code: <https://github.com/CaroHaensch/siliconsamplechallenge> — **[FILL IN the repository and
-  Zenodo DOI for THIS entry; each of the three entries has its own]**.
+  Code: <https://github.com/CaroHaensch/siliconsamplechallenge>. Zenodo DOI: assigned by the GitHub release that constitutes this deposit, and emailed to
+the core team together with the file fingerprints — a DOI cannot be contained in the
+snapshot it identifies. Concept DOI recorded in metadata.json -> zenodo_doi after release.
   No credentials in the repository: the provider key is read from the environment
   (`OPENAI_API_KEY`); `.Renviron`, `.env`, `*.key` and `*.pem` are git-ignored.
   Determinism: R-side seeds are fixed and documented (F.1). The API side is not deterministic at
@@ -404,10 +404,9 @@ sections (B) once per model. See the call's *Disclosure policy* for escrow rules
   the provider's batch record (id, model, status, request counts) and the full response body and
   token usage for every request. Per-chunk parsed responses are in `pipeline/out/chunks/*.rds` and
   `pipeline/out/logs/raw_output_*.rds`.
-  **[DECIDE: deposit these publicly with the repo, or as a separate linked Zenodo upload if
-  oversized, or escrow them — and record the choice in `metadata.json` → `disclosure_class`. Note
-  `pipeline/out/` is currently git-ignored; un-ignore it or attach the logs to the deposit
-  explicitly, or they will not ship.]**
+ Deposited publicly as a separate Zenodo record (oversized for the code repository at
+~215 MB compressed), linked here: https://doi.org/10.5281/zenodo.22144664. Disclosure class A —
+the logs are public, not escrowed.
 - **K.3 Computational resources** — API-call counts, total tokens, cost, compute time:
   Submitted run (9,900 respondents, 2 calls each):
 
